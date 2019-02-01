@@ -463,7 +463,8 @@ public class mainLoader extends JFrame implements ActionListener{
 	}
 	
 	private void getVideoFileFrame(){
-		Mat frame = UtilOpencv.grabFrameVideoFile();
+		Mat frameOriginal = UtilOpencv.grabFrameVideoFile();
+		Mat frame = UtilOpencv.resizeMat(frameOriginal, 375, 500);
 		original = showFusion.toBufferedImage(frame);
 		paintBufferedImage(UtilOpencv.matToBufferedImage(frame), null, true);
 		//processAllFilter();
