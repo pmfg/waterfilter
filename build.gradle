@@ -1,0 +1,24 @@
+apply plugin: 'java'
+
+repositories {
+    flatDir {
+        dirs 'lib'  // Diretório onde as dependências locais estão localizadas
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'lib', include: ['*.jar'])  // Inclui todas as dependências JAR na pasta lib
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/lsts'  // Direciona o Gradle para procurar arquivos Java na pasta src
+        }
+    }
+}
+
+task run(type: JavaExec) {
+    main = 'mainLoader'  // Nome da classe principal
+    classpath = sourceSets.main.runtimeClasspath  // Define o classpath com as dependências e o código-fonte
+}
