@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.Serial;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -13,9 +14,9 @@ import javax.swing.JPanel;
 
 public class ImagePreviewPanel extends JPanel implements PropertyChangeListener {
 
+  @Serial
   private static final long serialVersionUID = 1L;
   private int width, height;
-  private ImageIcon icon;
   private Image image;
   private static final int ACCSIZE = 200;
   private Color bg;
@@ -42,34 +43,28 @@ public class ImagePreviewPanel extends JPanel implements PropertyChangeListener 
        * Make reasonably sure we have an image format that AWT can
        * handle so we don't try to draw something silly.
        */
-      if ((name != null) &&
-          name.toLowerCase().endsWith(".jpg") ||
-          name.toLowerCase().endsWith(".jpeg") ||
-          name.toLowerCase().endsWith(".gif") ||
-          name.toLowerCase().endsWith(".png")) {
+      ImageIcon icon;
+      if (name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".jpeg") || name.toLowerCase().endsWith(".gif") || name.toLowerCase().endsWith(".png")) {
         icon = new ImageIcon(name);
         image = icon.getImage();
         scaleImage();
         repaint();
       }
-      if ((name != null) &&
-          name.toLowerCase().endsWith(".mov") ||
-          name.toLowerCase().endsWith(".wmv") ||
-          name.toLowerCase().endsWith(".mp4") ||
-          name.toLowerCase().endsWith(".avi") ||
-          name.toLowerCase().endsWith(".MOV")) {
+      if (name.toLowerCase().endsWith(".mov") || name.toLowerCase().endsWith(".wmv") || name.toLowerCase().endsWith(".mp4") || name.toLowerCase().endsWith(".avi") || name.toLowerCase().endsWith(".MOV")) {
 
         UtilOpencv.openVideoFile(name);
         if (UtilOpencv.isVideoFileOpen) {
           try {
             BufferedImage frame = UtilOpencv.matToBufferedImage(UtilOpencv.getFrameFileCounter());
             UtilOpencv.closeVideoFile();
-            icon = new ImageIcon(frame);
-            image = icon.getImage();
-            scaleImage();
-            repaint();
+            if (frame != null) {
+              icon = new ImageIcon(frame);
+              image = icon.getImage();
+              scaleImage();
+              repaint();
+            }
           } catch (Exception e1) {
-            e1.printStackTrace();
+            System.out.println("Error: " + e1.getMessage());
           }
         }
       }

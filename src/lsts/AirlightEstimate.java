@@ -65,5 +65,4 @@ public class AirlightEstimate {
       score += means[i] - stds[i];
     return score;
   }
-
 }

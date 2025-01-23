@@ -15,11 +15,11 @@ import org.opencv.imgproc.Imgproc;
 public class FeatureWeight {
   public static Mat Saliency(Mat img) {
     // blur image with a 3x3 or 5x5 Gaussian filter
-    Mat gfbgr = new Mat();
-    Imgproc.GaussianBlur(img, gfbgr, new Size(3, 3), 3);
+    Mat gFbgr = new Mat();
+    Imgproc.GaussianBlur(img, gFbgr, new Size(3, 3), 3);
     // Perform sRGB to CIE Lab color space conversion
     Mat LabIm = new Mat();
-    Imgproc.cvtColor(gfbgr, LabIm, Imgproc.COLOR_BGR2Lab);
+    Imgproc.cvtColor(gFbgr, LabIm, Imgproc.COLOR_BGR2Lab);
     // Compute Lab average values (note that in the paper this average is found from
     // the
     // un-blurred original image, but the results are quite similar)
@@ -54,7 +54,7 @@ public class FeatureWeight {
   }
 
   public static Mat LocalContrast(Mat img) {
-    double[] h = { 1.0 / 16.0, 4.0 / 16.0, 6.0 / 16.0, 4.0 / 16.0, 1.0 / 16.0 };
+    double[] h = {1.0 / 16.0, 4.0 / 16.0, 6.0 / 16.0, 4.0 / 16.0, 1.0 / 16.0};
     Mat mask = new Mat(h.length, h.length, img.type());
     for (int i = 0; i < h.length; i++) {
       for (int j = 0; j < h.length; j++) {

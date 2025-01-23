@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.Serial;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 
@@ -45,6 +46,8 @@ public class mainLoader extends JFrame implements ActionListener {
   static {
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
   }
+
+  @Serial
   private static final long serialVersionUID = 1L;
   static JFrame consoleOutput;
   static JScrollPane consoleScroll;
@@ -67,10 +70,11 @@ public class mainLoader extends JFrame implements ActionListener {
   JMenuBar menuBar;
   JMenu menuOptions;
   JMenuItem menuItemImage;
+  JMenuItem menuItemSaveImage;
   JFileChooser fileChooser;
   ImagePreviewPanel preview;
   Thread updaterThreadImage = null;
-  boolean isFotoFilter;
+  boolean isPhotoFilter;
   JFrame debugFrame;
   JMenuItem menuItemVideo;
   JButton playButton;
@@ -83,14 +87,14 @@ public class mainLoader extends JFrame implements ActionListener {
   boolean isPause;
   boolean isForward;
   boolean isBackward;
-  int stepVideo[] = { 2, 4, 6, 8, 10 };
+  int[] stepVideo = {2, 4, 6, 8, 10};
   int stepCountForward;
   int stepCountBackward;
   int frameCountVideo;
   JPanel debugPanel;
-  JProgressBar pbar;
+  JProgressBar pBar;
   static final int MY_MINIMUM = 0;
-  JLabel jlabelInfoVideo;
+  JLabel jLabelInfoVideo;
   ImShow showFusion = new ImShow("fusion");
   ImShow showOriginal = new ImShow("original");
   ImShow showRemoveBackScatter = new ImShow("rmScatter");
@@ -116,7 +120,7 @@ public class mainLoader extends JFrame implements ActionListener {
   private static final double eps = 1e-6;
   private static final int level = 5;
 
-  public static void main(String args[]) {
+  public static void main(String[] args) {
     initConsoleFrame();
     printToConsole("Welcome");
     printToConsole("Operating System: " + UtilOpencv.getOS() + " - x" + UtilOpencv.getArch());
@@ -159,6 +163,10 @@ public class mainLoader extends JFrame implements ActionListener {
   }
 
   static void printToConsole(String text) {
+    //check if consoleOutput is displayed, if not display it
+    if (!consoleOutput.isVisible()) {
+      consoleOutput.setVisible(true);
+    }
     Calendar nowHour = Calendar.getInstance();
     DecimalFormat mFormat = new DecimalFormat("00");
     printTextOut
@@ -183,10 +191,11 @@ public class mainLoader extends JFrame implements ActionListener {
     showFusion.setVisibleWindow(false);
     showRemoveBackScatter.setVisibleWindow(false);
 
-    isFotoFilter = false;
+    isPhotoFilter = false;
     setFrame();
     setMenu();
     paintSolidColor();
+    //addZoomBox();
 
     updaterThreadImage = updaterThread();
     updaterThreadImage.start();
@@ -196,8 +205,6 @@ public class mainLoader extends JFrame implements ActionListener {
         int i = JOptionPane.showConfirmDialog(null, "Are you sure you want to quit?", "", JOptionPane.YES_NO_OPTION);
         if (i == JOptionPane.YES_OPTION) {
           System.exit(0);
-        } else {
-          return;
         }
       }
     });
@@ -208,10 +215,7 @@ public class mainLoader extends JFrame implements ActionListener {
         widthFrame = c.getSize().width - 8;
         heightFrame = c.getSize().height - 60;
         // if (isFotoFilter)
-        if (UtilOpencv.isVideoFileOpen())
-          paintBufferedImage(null, null, true);
-        else
-          paintBufferedImage(null, null, false);
+        paintBufferedImage(null, null, UtilOpencv.isVideoFileOpen());
       }
     });
   }
@@ -286,14 +290,11 @@ public class mainLoader extends JFrame implements ActionListener {
   }
 
   private void paintBufferedImage(BufferedImage image, String path, boolean videoFile) {
-    if (image == null) {
-      image = imageBack;
-    } else {
+    if (image != null) {
       imageBack = image;
     }
-
     if (!fullScreenPanel1 && !fullScreenPanel2) {
-      if (isFotoFilter) {
+      if (isPhotoFilter) {
         if (path != null) {
           imageBackFilter = FilterImageFusion(path, (widthFrame / 2) - 24, heightFrame - 32);
           mainImage = imageBackFilter;
@@ -307,8 +308,9 @@ public class mainLoader extends JFrame implements ActionListener {
       } else {
         mainImage = UtilOpencv.resize(imageBack, (widthFrame / 2) - 24, heightFrame - 32);
       }
-
-      imageTemp2.setIcon(new ImageIcon(mainImage));
+      if (mainImage != null) {
+        imageTemp2.setIcon(new ImageIcon(mainImage));
+      }
       panel2.add(imageTemp2);
       mainPanel.add(panel2);
 
@@ -323,7 +325,8 @@ public class mainLoader extends JFrame implements ActionListener {
 
       if (isPlay) {
         // TODO
-        UtilOpencv.saveSnapshot(UtilOpencv.joinBufferedImage(original, filter), "Output Images");
+        if (!UtilOpencv.saveSnapshot(UtilOpencv.joinBufferedImage(original, filter), "Output Images"))
+          printToConsole("ERROR: save snapshot image failed");
         /*
          * System.out.println("type:"+originalMat.type()+" | "+filterMat.type());
          * System.out.println("rows:"+originalMat.rows()+" | "+filterMat.rows());
@@ -341,9 +344,9 @@ public class mainLoader extends JFrame implements ActionListener {
          */
         UtilOpencv.AddVideoFrame(UtilOpencv.joinMatImage(originalMat, filterMat), filterMat);
       }
-    } else if (fullScreenPanel1 || fullScreenPanel2) {
+    } else {
       if (fullScreenPanel2) {
-        if (isFotoFilter) {
+        if (isPhotoFilter) {
           if (path != null) {
             imageBackFilter = FilterImageFusion(path, fullScreenPanel.getWidth(), fullScreenPanel.getHeight());
             mainImage = imageBackFilter;
@@ -356,9 +359,11 @@ public class mainLoader extends JFrame implements ActionListener {
         else
           mainImage = UtilOpencv.resize(imageBack, fullScreenPanel.getWidth(), fullScreenPanel.getHeight());
 
-        imageTemp2.setIcon(new ImageIcon(mainImage));
+        if (mainImage != null) {
+          imageTemp2.setIcon(new ImageIcon(mainImage));
+        }
         fullScreenPanel.add(imageTemp2);
-      } else if (fullScreenPanel1) {
+      } else {
         mainImage = UtilOpencv.resize(imageBack, fullScreenPanel.getWidth(), fullScreenPanel.getHeight());
         imageTemp1.setIcon(new ImageIcon(mainImage));
         fullScreenPanel.add(imageTemp1);
@@ -375,6 +380,9 @@ public class mainLoader extends JFrame implements ActionListener {
     menuItemImage = new JMenuItem("Load a Image");
     menuItemImage.addActionListener(this);
     menuOptions.add(menuItemImage);
+    menuItemSaveImage = new JMenuItem("Save Image");
+    menuItemSaveImage.addActionListener(this);
+    menuOptions.add(menuItemSaveImage);
     menuItemVideo = new JMenuItem("Load a Video");
     menuItemVideo.addActionListener(this);
     menuOptions.add(menuItemVideo);
@@ -384,10 +392,12 @@ public class mainLoader extends JFrame implements ActionListener {
 
   @Override
   public void actionPerformed(ActionEvent arg0) {
-    if (arg0.getActionCommand().toString().equals("Load a Image")) {
+    if (arg0.getActionCommand().equals("Load a Image")) {
       filterImage();
-    } else if (arg0.getActionCommand().toString().equals("Load a Video")) {
+    } else if (arg0.getActionCommand().equals("Load a Video")) {
       filterVideoFile();
+    } else if (arg0.getActionCommand().equals("Save Image")) {
+      saveImage();
     }
   }
 
@@ -412,8 +422,8 @@ public class mainLoader extends JFrame implements ActionListener {
       // user selects a file
       printToConsole("Load Image: " + fileChooser.getSelectedFile().getName());
 
-      if (fileChooser.getSelectedFile().toURI().toString().indexOf("%20") < 0) {
-        isFotoFilter = true;
+      if (!fileChooser.getSelectedFile().toURI().toString().contains("%20")) {
+        isPhotoFilter = true;
         paintBufferedImage(UtilOpencv.loadImage(fileChooser.getSelectedFile().toURI().toString()),
             fileChooser.getSelectedFile().toURI().toString(), false);
       } else {
@@ -444,20 +454,25 @@ public class mainLoader extends JFrame implements ActionListener {
 
   private void getVideoFileFrame() {
     Mat frameOriginal = UtilOpencv.grabFrameVideoFile();
-    Mat frame = UtilOpencv.resizeMat(frameOriginal, 375, 500);
-    original = showFusion.toBufferedImage(frame);
+    Mat frame = null;
+    if (frameOriginal != null) {
+      frame = UtilOpencv.resizeMat(frameOriginal, 375, 500);
+    }
+    if (frame != null) {
+      original = showFusion.toBufferedImage(frame);
+    }
     paintBufferedImage(UtilOpencv.matToBufferedImage(frame), null, true);
     // processAllFilter();
 
     if (isForward) {
       frameCountVideo = frameCountVideo + stepVideo[stepCountForward];
-      pbar.setValue(frameCountVideo);
+      pBar.setValue(frameCountVideo);
     } else if (isBackward) {
       frameCountVideo = (int) UtilOpencv.getFramePosition();
-      pbar.setValue(frameCountVideo);
+      pBar.setValue(frameCountVideo);
     } else {
       frameCountVideo++;
-      pbar.setValue(frameCountVideo);
+      pBar.setValue(frameCountVideo);
     }
 
     if (isBackward && (int) UtilOpencv.getFramePosition() < 10) {
@@ -480,15 +495,15 @@ public class mainLoader extends JFrame implements ActionListener {
   }
 
   private Thread updaterThread() {
-    Thread ret = new Thread("Update Image Thread") {
+    return new Thread("Update Image Thread") {
       @Override
       public void run() {
         while (true) {
-          if (isFotoFilter) {
+          if (isPhotoFilter) {
             try {
               Thread.sleep(1000);
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              printToConsole("ERROR 1: " + e.getMessage());
             }
             paintBufferedImage(null, null, false);
           } else {
@@ -510,6 +525,7 @@ public class mainLoader extends JFrame implements ActionListener {
                     debugFrame.setVisible(false);
                     System.out.println("A:" + e.getMessage());
                   } catch (Exception e1) {
+                    printToConsole("ERROR 2: " + e1.getMessage());
                   }
 
                   UtilOpencv.closeVideoFile();
@@ -517,7 +533,8 @@ public class mainLoader extends JFrame implements ActionListener {
               } else if (isForward) {
                 try {
                   long startTime = System.currentTimeMillis();
-                  UtilOpencv.jumpFramesForward(stepVideo[stepCountForward]);
+                  if (!UtilOpencv.jumpFramesForward(stepVideo[stepCountForward]))
+                    printToConsole("ERROR: jump frames forward failed");
                   getVideoFileFrame();
                   long stopTime = System.currentTimeMillis();
                   long fpsTime = stopTime - startTime;
@@ -531,6 +548,7 @@ public class mainLoader extends JFrame implements ActionListener {
                     debugFrame.setVisible(false);
                     System.out.println("B:" + e.getMessage());
                   } catch (Exception e1) {
+                    printToConsole("ERROR 3: " + e1.getMessage());
                   }
 
                   UtilOpencv.closeVideoFile();
@@ -538,7 +556,8 @@ public class mainLoader extends JFrame implements ActionListener {
               } else if (isBackward) {
                 try {
                   long startTime = System.currentTimeMillis();
-                  UtilOpencv.jumpFramesBackward(stepVideo[stepCountBackward]);
+                  if (!UtilOpencv.jumpFramesBackward(stepVideo[stepCountBackward]))
+                    printToConsole("ERROR: jumpFramesBackward failed");
                   getVideoFileFrame();
                   long stopTime = System.currentTimeMillis();
                   long fpsTime = stopTime - startTime;
@@ -551,7 +570,8 @@ public class mainLoader extends JFrame implements ActionListener {
                   try {
                     debugFrame.setVisible(false);
                     System.out.println("C:" + e.getMessage());
-                  } catch (Exception e1) {
+                  } catch (Exception ignored) {
+                    printToConsole("ERROR 4: " + e.getMessage());
                   }
 
                   UtilOpencv.closeVideoFile();
@@ -560,25 +580,25 @@ public class mainLoader extends JFrame implements ActionListener {
                 try {
                   Thread.sleep(1000);
                   paintBufferedImage(null, null, true);
-                } catch (InterruptedException e) {
+                } catch (InterruptedException err) {
+                  printToConsole("ERROR 5: " + err.getMessage());
                 }
               }
             } else {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
-                e.printStackTrace();
+                printToConsole("ERROR 6: " + e.getMessage());
               }
             }
           }
         }
       }
     };
-    return ret;
   }
 
   public void filterVideoFile() {
-    isFotoFilter = false;
+    isPhotoFilter = false;
 
     FileNameExtensionFilter filter = new FileNameExtensionFilter("Video file", "avi", "mp4", "mjpeg", "3gp", "mov",
         "MOV", "wmv", "mkv");
@@ -593,7 +613,7 @@ public class mainLoader extends JFrame implements ActionListener {
     if (result == JFileChooser.APPROVE_OPTION) {
       // user selects a file
       printToConsole("Load Video: " + fileChooser.getSelectedFile().getName());
-      if (fileChooser.getSelectedFile().toURI().toString().indexOf("%20") < 0) {
+      if (!fileChooser.getSelectedFile().toURI().toString().contains("%20")) {
         UtilOpencv.openVideoFile(fileChooser.getSelectedFile().toURI().toString());
         // printToConsole("info : "+UtilOpencv.getFps()+" : "+UtilOpencv.getWidth()+" :
         // "+UtilOpencv.getHeight());
@@ -623,22 +643,22 @@ public class mainLoader extends JFrame implements ActionListener {
     debugPanel = new JPanel();
     debugPanel.setLayout(new BoxLayout(debugPanel, BoxLayout.Y_AXIS));
     debugPanel.setBorder(BorderFactory.createTitledBorder("Progress"));
-    pbar = new JProgressBar();
-    pbar.setMinimum(MY_MINIMUM);
-    pbar.setMaximum(maxFrame);
-    pbar.setStringPainted(true);
-    pbar.setAlignmentX(Component.CENTER_ALIGNMENT);
+    pBar = new JProgressBar();
+    pBar.setMinimum(MY_MINIMUM);
+    pBar.setMaximum(maxFrame);
+    pBar.setStringPainted(true);
+    pBar.setAlignmentX(Component.CENTER_ALIGNMENT);
     // add to JPanel
-    debugPanel.add(pbar);
+    debugPanel.add(pBar);
 
     // TODO
     UtilOpencv.VideoInit("Output Video", fps);
     printToConsole(UtilOpencv.GetVideoSavedPath());
 
-    String textInfo = new String("Info : " + fps + " fps >> " + width + " x " + height + " px");
-    jlabelInfoVideo = new JLabel(textInfo);
-    jlabelInfoVideo.setAlignmentX(Component.CENTER_ALIGNMENT);
-    debugPanel.add(jlabelInfoVideo);
+    String textInfo = "Info : " + fps + " fps >> " + width + " x " + height + " px";
+    jLabelInfoVideo = new JLabel(textInfo);
+    jLabelInfoVideo.setAlignmentX(Component.CENTER_ALIGNMENT);
+    debugPanel.add(jLabelInfoVideo);
 
     JPanel buttonPanel = new JPanel();
     buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
@@ -689,7 +709,7 @@ public class mainLoader extends JFrame implements ActionListener {
           forwardButton.setEnabled(true);
           backwardButton.setEnabled(true);
 
-          isFotoFilter = false;
+          isPhotoFilter = false;
           if (UtilOpencv.isVideoFileOpen()) {
             debugFrame.setVisible(false);
             UtilOpencv.closeVideoFile();
@@ -795,16 +815,49 @@ public class mainLoader extends JFrame implements ActionListener {
       }
     });
     buttonPanel.add(backwardButton);
-
     debugPanel.add(buttonPanel);
-
     debugFrame.add(debugPanel);
-
     isPlay = true;
     isStop = false;
     isPause = false;
     isForward = false;
     isBackward = false;
+  }
+
+  private void saveImage() {
+    if(UtilOpencv.saveSnapshot(UtilOpencv.joinBufferedImage(mainImage, imageBackFilter), "Output Images"))
+      printToConsole("Image saved");
+    else
+      printToConsole("ERROR: save image failed");
+  }
+
+  // TODO
+  // Need to add a square box showing zoom where the mouse is hover filtered image
+  private void addZoomBox() {
+    panel2.addMouseMotionListener(new MouseAdapter() {
+      @Override
+      public void mouseMoved(MouseEvent e) {
+        int zoomSize = 100;
+        int x = e.getX();
+        int y = e.getY();
+        int startX = Math.max(0, x - zoomSize / 2);
+        int startY = Math.max(0, y - zoomSize / 2);
+        int endX = Math.min(mainImage.getWidth(), x + zoomSize / 2);
+        int endY = Math.min(mainImage.getHeight(), y + zoomSize / 2);
+
+        BufferedImage zoomedImage = mainImage.getSubimage(startX, startY, endX - startX, endY - startY);
+        BufferedImage scaledZoomedImage = new BufferedImage(zoomSize * 2, zoomSize * 2, zoomedImage.getType());
+        Graphics2D g = scaledZoomedImage.createGraphics();
+        g.drawImage(zoomedImage, 0, 0, zoomSize * 2, zoomSize * 2, null);
+        g.dispose();
+
+        JLabel zoomLabel = new JLabel(new ImageIcon(scaledZoomedImage));
+        zoomLabel.setBorder(BorderFactory.createLineBorder(Color.RED));
+        zoomLabel.setBounds(x + 10, y + 10, zoomSize * 2, zoomSize * 2);
+        panel2.add(zoomLabel);
+        panel2.repaint();
+      }
+    });
   }
 
   // FILTERS
@@ -822,7 +875,7 @@ public class mainLoader extends JFrame implements ActionListener {
     try {
       bufImage = showFusion.toBufferedImage(fusion);
     } catch (Exception e) {
-      e.printStackTrace();
+      printToConsole("ERROR: " + e.getMessage());
     }
 
     if (bufImage != null) {
@@ -847,7 +900,7 @@ public class mainLoader extends JFrame implements ActionListener {
     try {
       bufImage = showFusion.toBufferedImage(fusion);
     } catch (Exception e) {
-      e.printStackTrace();
+      printToConsole("ERROR: " + e.getMessage());
     }
 
     if (bufImage != null) {

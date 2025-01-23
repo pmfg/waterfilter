@@ -126,7 +126,7 @@ public class Filters {
 
   /**
    * Guided Image Filter for Color Image
-   * 
+   *
    * @param origI guidance image (should be a gray-scale/single channel image)
    * @param p     filtering input image (should be a gray-scale/single channel
    *              image)
@@ -165,9 +165,9 @@ public class Filters {
     Imgproc.resize(I, I_sub, new Size(I.cols() / s, I.rows() / s), 0.0, 0.0, Imgproc.INTER_NEAREST);
     Core.split(I_sub, Isubchannels);
     r_sub = r / s;
-    mean_I_r = boxfilter(Isubchannels.get(0), (int) r_sub);
-    mean_I_g = boxfilter(Isubchannels.get(1), (int) r_sub);
-    mean_I_b = boxfilter(Isubchannels.get(2), (int) r_sub);
+    mean_I_r = boxFilter(Isubchannels.get(0), (int) r_sub);
+    mean_I_g = boxFilter(Isubchannels.get(1), (int) r_sub);
+    mean_I_b = boxFilter(Isubchannels.get(2), (int) r_sub);
 
     // variance of I in each local patch: the matrix Sigma in Eqn (14).
     // Note the variance in each local patch is a 3x3 symmetric matrix:
@@ -182,19 +182,19 @@ public class Filters {
     Mat var_I_bb = new Mat();
     Mat temp1 = new Mat();
 
-    Core.subtract(boxfilter(Isubchannels.get(0).mul(Isubchannels.get(0)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(0).mul(Isubchannels.get(0)), (int) r_sub),
         mean_I_r.mul(mean_I_r), temp1);
     Core.add(temp1, new Scalar(eps), var_I_rr);
-    Core.subtract(boxfilter(Isubchannels.get(0).mul(Isubchannels.get(1)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(0).mul(Isubchannels.get(1)), (int) r_sub),
         mean_I_r.mul(mean_I_g), var_I_rg);
-    Core.subtract(boxfilter(Isubchannels.get(0).mul(Isubchannels.get(2)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(0).mul(Isubchannels.get(2)), (int) r_sub),
         mean_I_r.mul(mean_I_b), var_I_rb);
-    Core.subtract(boxfilter(Isubchannels.get(1).mul(Isubchannels.get(1)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(1).mul(Isubchannels.get(1)), (int) r_sub),
         mean_I_g.mul(mean_I_g), temp1);
     Core.add(temp1, new Scalar(eps), var_I_gg);
-    Core.subtract(boxfilter(Isubchannels.get(1).mul(Isubchannels.get(2)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(1).mul(Isubchannels.get(2)), (int) r_sub),
         mean_I_g.mul(mean_I_b), var_I_gb);
-    Core.subtract(boxfilter(Isubchannels.get(2).mul(Isubchannels.get(2)), (int) r_sub),
+    Core.subtract(boxFilter(Isubchannels.get(2).mul(Isubchannels.get(2)), (int) r_sub),
         mean_I_b.mul(mean_I_b), temp1);
     Core.add(temp1, new Scalar(eps), var_I_bb);
 
@@ -225,16 +225,14 @@ public class Filters {
     } else {
       ArrayList<Mat> pc = new ArrayList<>();
       Core.split(p2, pc);
-      for (int i = 0; i < pc.size(); i++) {
-        pc.set(i, filterSingleChannel(pc.get(i), s, Isubchannels, Ichannels, mean_I_r, mean_I_g, mean_I_b, invrr,
-            invrg, invrb, invgg, invgb, invbb, r_sub));
-      }
+      pc.replaceAll(mat -> filterSingleChannel(mat, s, Isubchannels, Ichannels, mean_I_r, mean_I_g, mean_I_b, invrr,
+          invrg, invrb, invgg, invgb, invbb, r_sub));
       Core.merge(pc, result);
     }
     return convertTo(result, depth == -1 ? p.depth() : depth);
   }
 
-  private static Mat boxfilter(Mat I, int r) {
+  private static Mat boxFilter(Mat I, int r) {
     Mat result = new Mat();
     Imgproc.blur(I, result, new Size(r, r));
     return result;
@@ -250,16 +248,16 @@ public class Filters {
   }
 
   private static Mat filterSingleChannel(Mat p, double s, ArrayList<Mat> Isubchannels, ArrayList<Mat> Ichannels,
-      Mat mean_I_r, Mat mean_I_g, Mat mean_I_b, Mat invrr, Mat invrg, Mat invrb, Mat invgg, Mat invgb,
-      Mat invbb, double r_sub) {
+                                         Mat mean_I_r, Mat mean_I_g, Mat mean_I_b, Mat invrr, Mat invrg, Mat invrb, Mat invgg, Mat invgb,
+                                         Mat invbb, double r_sub) {
     Mat p_sub = new Mat();
     Imgproc.resize(p, p_sub, new Size(p.cols() / s, p.rows() / s), 0.0, 0.0, Imgproc.INTER_NEAREST);
 
-    Mat mean_p = boxfilter(p_sub, (int) r_sub);
+    Mat mean_p = boxFilter(p_sub, (int) r_sub);
 
-    Mat mean_Ip_r = boxfilter(Isubchannels.get(0).mul(p_sub), (int) r_sub);
-    Mat mean_Ip_g = boxfilter(Isubchannels.get(1).mul(p_sub), (int) r_sub);
-    Mat mean_Ip_b = boxfilter(Isubchannels.get(2).mul(p_sub), (int) r_sub);
+    Mat mean_Ip_r = boxFilter(Isubchannels.get(0).mul(p_sub), (int) r_sub);
+    Mat mean_Ip_g = boxFilter(Isubchannels.get(1).mul(p_sub), (int) r_sub);
+    Mat mean_Ip_b = boxFilter(Isubchannels.get(2).mul(p_sub), (int) r_sub);
 
     // convariance of (I, p) in each local patch
     Mat cov_Ip_r = new Mat();
@@ -285,17 +283,17 @@ public class Filters {
     Core.subtract(b, a_g.mul(mean_I_g), b);
     Core.subtract(b, a_b.mul(mean_I_b), b);
 
-    Mat mean_a_r = boxfilter(a_r, (int) r_sub);
-    Mat mean_a_g = boxfilter(a_g, (int) r_sub);
-    Mat mean_a_b = boxfilter(a_b, (int) r_sub);
-    Mat mean_b = boxfilter(b, (int) r_sub);
+    Mat mean_a_r = boxFilter(a_r, (int) r_sub);
+    Mat mean_a_g = boxFilter(a_g, (int) r_sub);
+    Mat mean_a_b = boxFilter(a_b, (int) r_sub);
+    Mat mean_b = boxFilter(b, (int) r_sub);
 
     Imgproc.resize(mean_a_r, mean_a_r,
-        new Size(Ichannels.get(0).cols(), Ichannels.get(0).rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
+        new Size(Ichannels.getFirst().cols(), Ichannels.getFirst().rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
     Imgproc.resize(mean_a_g, mean_a_g,
-        new Size(Ichannels.get(0).cols(), Ichannels.get(0).rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
+        new Size(Ichannels.getFirst().cols(), Ichannels.getFirst().rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
     Imgproc.resize(mean_a_b, mean_a_b,
-        new Size(Ichannels.get(0).cols(), Ichannels.get(0).rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
+        new Size(Ichannels.getFirst().cols(), Ichannels.getFirst().rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
     Imgproc.resize(mean_b, mean_b,
         new Size(Ichannels.get(0).cols(), Ichannels.get(0).rows()), 0.0, 0.0, Imgproc.INTER_LINEAR);
 

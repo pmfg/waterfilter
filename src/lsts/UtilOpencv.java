@@ -22,20 +22,32 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.VideoWriter;;
+import org.opencv.videoio.VideoWriter;
 
 public class UtilOpencv {
-  /** Enumeration of operating system families. */
+  /**
+   * Enumeration of operating system families.
+   */
   public enum Family {
-    /** Microsoft Windows. */
+    /**
+     * Microsoft Windows.
+     */
     WINDOWS,
-    /** Unix variants. */
+    /**
+     * Unix variants.
+     */
     UNIX,
-    /** Mac */
+    /**
+     * Mac
+     */
     MAC,
-    /** Sol */
+    /**
+     * Sol
+     */
     SOL,
-    /** unknown OS */
+    /**
+     * unknown OS
+     */
     UNKNOWN
   }
 
@@ -56,27 +68,26 @@ public class UtilOpencv {
   static int heightVideoUsb;
   static int heightVideoIpCam;
   static String libOpencv;
-  static double shiftValues[];
-  static int cntImg = 0;
 
   static VideoWriter videoWriter;
   static VideoWriter videoWriterSingle;
-  static boolean firstframeConfig = true;
+  static boolean firstFrameConfig = true;
   static int fps = 0;
-  static int fpsSingle = 0;
   static String path;
   static String pathSingle;
 
   static ImShow showDebug = new ImShow("debug");
 
   public static void VideoInit(String pathFolder, int fpsVideo) {
-    firstframeConfig = true;
+    firstFrameConfig = true;
     fps = fpsVideo;
 
     File directory = new File(pathFolder);
     if (!directory.exists()) {
-      directory.mkdir();
-      // System.out.println("create folder");
+      if (directory.mkdir())
+        System.out.println("create folder");
+      else
+        System.out.println("error create folder");
     }
 
     Date date = new Date();
@@ -90,15 +101,15 @@ public class UtilOpencv {
   }
 
   public static void AddVideoFrame(Mat frame, Mat singleFrame) {
-    if (firstframeConfig) {
+    if (firstFrameConfig) {
       videoWriter = new VideoWriter(path, VideoWriter.fourcc('M', 'J', 'P', 'G'), fps, frame.size());
       if (singleFrame != null)
         videoWriterSingle = new VideoWriter(pathSingle, VideoWriter.fourcc('M', 'J', 'P', 'G'), fps,
             singleFrame.size());
-      firstframeConfig = false;
+      firstFrameConfig = false;
     }
 
-    if (videoWriter.isOpened() == false) {
+    if (!videoWriter.isOpened()) {
       videoWriter.release();
       if (singleFrame != null)
         videoWriterSingle.release();
@@ -120,7 +131,7 @@ public class UtilOpencv {
       videoWriter.release();
       if (videoWriterSingle.isOpened())
         videoWriterSingle.release();
-      firstframeConfig = true;
+      firstFrameConfig = true;
     } catch (Exception e) {
       // TODO: handle exception
     }
@@ -132,13 +143,13 @@ public class UtilOpencv {
 
   public static Family getOS() {
     String OS = System.getProperty("os.name").toLowerCase();
-    if (OS.indexOf("win") >= 0) {
+    if (OS.contains("win")) {
       return Family.WINDOWS;
-    } else if (OS.indexOf("mac") >= 0) {
+    } else if (OS.contains("mac")) {
       return Family.MAC;
-    } else if (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0) {
+    } else if (OS.contains("nix") || OS.contains("nux") || OS.indexOf("aix") > 0) {
       return Family.UNIX;
-    } else if (OS.indexOf("sunos") >= 0) {
+    } else if (OS.contains("sunos")) {
       return Family.SOL;
     } else {
       return Family.UNKNOWN;
@@ -160,7 +171,9 @@ public class UtilOpencv {
     return archResult;
   }
 
-  /** Convert a Mat image to bufferedImage */
+  /**
+   * Convert a Mat image to bufferedImage
+   */
   public static BufferedImage matToBufferedImage(Mat matrix) {
     try {
       if (!matrix.empty()) {
@@ -202,7 +215,9 @@ public class UtilOpencv {
     }
   }
 
-  /** Convert bufferedImage to Mat */
+  /**
+   * Convert bufferedImage to Mat
+   */
   public static Mat bufferedImageToMat(BufferedImage in) {
     Mat out;
     if (in.getType() == BufferedImage.TYPE_3BYTE_BGR) {
@@ -216,7 +231,7 @@ public class UtilOpencv {
       for (int i = 0; i < dataBuff.length; i++) {
         data[i * 3] = (byte) ((dataBuff[i] >> 16) & 0xFF);
         data[i * 3 + 1] = (byte) ((dataBuff[i] >> 8) & 0xFF);
-        data[i * 3 + 2] = (byte) ((dataBuff[i] >> 0) & 0xFF);
+        data[i * 3 + 2] = (byte) ((dataBuff[i]) & 0xFF);
       }
       out.put(0, 0, data);
     } else {
@@ -251,7 +266,9 @@ public class UtilOpencv {
     return newImage;
   }
 
-  /** Convert color image */
+  /**
+   * Convert color image
+   */
   public static Mat convertImgColor(Mat img, boolean toColor) {
     Mat result = new Mat();
 
@@ -263,7 +280,9 @@ public class UtilOpencv {
     return result;
   }
 
-  /** Resize Buffered Image */
+  /**
+   * Resize Buffered Image
+   */
   public static BufferedImage resize(BufferedImage img, int newW, int newH) {
     Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_DEFAULT);
     BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_3BYTE_BGR);
@@ -275,14 +294,18 @@ public class UtilOpencv {
     return dimg;
   }
 
-  /** Resize Mat Image */
+  /**
+   * Resize Mat Image
+   */
   public static Mat resizeMat(Mat img, int newW, int newH) {
     Mat temp = new Mat(newH, newW, img.type());
     Imgproc.resize(img, temp, new Size(newH, newW));
     return temp;
   }
 
-  /** Add text to Buffered Image */
+  /**
+   * Add text to Buffered Image
+   */
   public static BufferedImage addText(BufferedImage old, String text, Color m_color, int posX, int posY) {
     BufferedImage img = new BufferedImage(old.getWidth(), old.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
     Graphics2D g1d = img.createGraphics();
@@ -300,23 +323,32 @@ public class UtilOpencv {
     return img;
   }
 
-  /** Save a snapshot to disk */
-  public static void saveSnapshot(BufferedImage image, String snapshotdir) {
+  /**
+   * Save a snapshot to disk
+   */
+  public static boolean saveSnapshot(BufferedImage image, String snapShotDir) {
     Date date = new Date();
     String dateFolder = String.format("%tT", date);
-    String imageJpeg = String.format("%s/%s.png", snapshotdir, dateFolder.replace(":", "-"));
+    String imageJpeg = String.format("%s/%s.png", snapShotDir, dateFolder.replace(":", "-"));
     File outputfile = new File(imageJpeg);
     try {
       File pDir = outputfile.getParentFile();
       if (!pDir.exists())
-        pDir.mkdirs();
+        if (!pDir.mkdirs()) {
+          System.out.println("Error creating directory");
+          return false;
+        }
       ImageIO.write(image, "png", outputfile);
+      return true;
     } catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Error saving image: " + e.getMessage());
+      return false;
     }
   }
 
-  /** Load a Image */
+  /**
+   * Load a Image
+   */
   public static BufferedImage loadImage(String pathToImage) {
     if (getOS() == Family.UNIX)
       pathToImage = pathToImage.replaceFirst("file:", "");
@@ -324,30 +356,33 @@ public class UtilOpencv {
       pathToImage = pathToImage.replaceFirst("file:/", "");
 
     // mainLoader.printToConsole(pathToImage.toString());
-    Mat image = Imgcodecs.imread(pathToImage.toString(), Imgcodecs.IMREAD_ANYCOLOR);
+    Mat image = Imgcodecs.imread(pathToImage, Imgcodecs.IMREAD_ANYCOLOR);
     return matToBufferedImage(image);
   }
 
-  /** Load a Image */
+  /**
+   * Load a Image
+   */
   public static Mat loadImageMat(String pathToImage) {
     if (getOS() == Family.UNIX)
       pathToImage = pathToImage.replaceFirst("file:", "");
     else if (getOS() == Family.WINDOWS)
       pathToImage = pathToImage.replaceFirst("file:/", "");
 
-    Mat image = Imgcodecs.imread(pathToImage.toString(), Imgcodecs.IMREAD_ANYCOLOR);
-    return image;
+    return Imgcodecs.imread(pathToImage, Imgcodecs.IMREAD_ANYCOLOR);
   }
 
-  /** Open a video file */
-  public static Mat openVideoFile(String pathToImage) {
+  /**
+   * Open a video file
+   */
+  public static void openVideoFile(String pathToImage) {
     if (getOS() == Family.UNIX)
       pathToImage = pathToImage.replaceFirst("file:", "");
     else if (getOS() == Family.WINDOWS)
       pathToImage = pathToImage.replaceFirst("file:/", "");
 
     isVideoFileOpen = false;
-    videoFile = new VideoCapture(pathToImage.toString());
+    videoFile = new VideoCapture(pathToImage);
     videoFileFrame = new Mat();
     if (videoFile.read(videoFileFrame)) {
       isVideoFileOpen = true;
@@ -397,25 +432,29 @@ public class UtilOpencv {
       widthVideoFile = (int) videoFile.get(3);
       heightVideoFile = (int) videoFile.get(4);
 
-      return videoFileFrame;
     } else {
       isVideoFileOpen = true;
-      return null;
     }
   }
 
-  /** Close a video file input */
+  /**
+   * Close a video file input
+   */
   public static void closeVideoFile() {
     videoFile.release();
     isVideoFileOpen = false;
   }
 
-  /** Is video file open */
+  /**
+   * Is video file open
+   */
   public static boolean isVideoFileOpen() {
     return isVideoFileOpen;
   }
 
-  /** Info Video file fps */
+  /**
+   * Info Video file fps
+   */
   public static int getFpsVideoFile() {
     return fpsVideoFile;
   }
@@ -432,7 +471,9 @@ public class UtilOpencv {
     return (int) videoFile.get(7);
   }
 
-  /** Grab video file frame */
+  /**
+   * Grab video file frame
+   */
   public static Mat grabFrameVideoFile() {
     videoFileFrame = new Mat();
     try {
@@ -494,7 +535,9 @@ public class UtilOpencv {
 
   }
 
-  /** Open a usb video */
+  /**
+   * Open a usb video
+   */
   public static Mat openVideoUsb(int idCam) {
     isVideoUsbOpen = false;
     videoUsb = new VideoCapture(idCam);
@@ -511,13 +554,17 @@ public class UtilOpencv {
     }
   }
 
-  /** Close a video usb input */
+  /**
+   * Close a video usb input
+   */
   public static void closeVideoUsb() {
     videoUsb.release();
     isVideoUsbOpen = false;
   }
 
-  /** Is video usb open */
+  /**
+   * Is video usb open
+   */
   public static boolean isVideoUsbOpen() {
     return isVideoUsbOpen;
   }
@@ -530,7 +577,9 @@ public class UtilOpencv {
     return heightVideoUsb;
   }
 
-  /** Grab frame */
+  /**
+   * Grab frame
+   */
   public static Mat grabFrameVideoUsb() {
     videoUsbFrame = new Mat();
     try {
@@ -549,7 +598,9 @@ public class UtilOpencv {
     }
   }
 
-  /** Open a ipcam video */
+  /**
+   * Open a ipcam video
+   */
   public static boolean openVideoIpCam(String urlHost) {
     videoIpCam = new VideoCapture();
     try {
@@ -572,13 +623,17 @@ public class UtilOpencv {
     }
   }
 
-  /** Close a video ipca input */
+  /**
+   * Close a video ipca input
+   */
   public static void closeVideoIpCam() {
     videoIpCam.release();
     isVideoIpCamOpen = false;
   }
 
-  /** Is video IpCam open */
+  /**
+   * Is video IpCam open
+   */
   public static boolean isVideoIpCamOpen() {
     return isVideoIpCamOpen;
   }
@@ -591,7 +646,9 @@ public class UtilOpencv {
     return heightVideoIpCam;
   }
 
-  /** Grab frame */
+  /**
+   * Grab frame
+   */
   public static Mat grabFrameVideoIpCam() {
     videoIpCamFrame = new Mat();
     try {
